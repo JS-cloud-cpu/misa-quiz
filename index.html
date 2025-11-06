@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡El Desafío del Súper Experto!</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente divertida para niños */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;700&display=swap');
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #fce4ec; /* Rosa claro de fondo */
+        }
+        .quiz-container {
+            max-width: 600px;
+            min-height: 80vh; /* Asegura un buen tamaño en móviles */
+        }
+        .option-btn {
+            transition: all 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 0 0 #d97706; /* Sombra de botón 'apretable' */
+        }
+        .option-btn:hover:not([disabled]) {
+            background-color: #fcd34d; /* Amarillo más intenso al pasar el ratón */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 0 #d97706;
+        }
+        .option-btn:active:not([disabled]) {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 0 #d97706;
+        }
+        .correct {
+            background-color: #34d399 !important; /* Verde esmeralda */
+            box-shadow: 0 4px 0 0 #059669 !important;
+            color: white;
+        }
+        .wrong {
+            background-color: #f87171 !important; /* Rojo vibrante */
+            box-shadow: 0 4px 0 0 #dc2626 !important;
+            color: white;
+        }
+        .hidden-feedback {
+            transform: scale(0);
+            transition: transform 0.3s ease-out;
+        }
+        .visible-feedback {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center">
+
+    <div id="app" class="quiz-container bg-white p-6 sm:p-8 rounded-2xl shadow-2xl border-4 border-pink-400 w-full">
+        <!-- Título principal -->
+        <h1 class="text-3xl sm:text-4xl text-center text-pink-600 font-extrabold mb-6">
+            🏆 ¡El Desafío del Súper Experto!
+        </h1>
+
+        <!-- Contenedor del Quiz -->
+        <div id="quiz-area">
+            <!-- La pregunta se insertará aquí -->
+        </div>
+
+        <!-- Pantalla de Carga/Inicio -->
+        <div id="start-screen" class="text-center p-8">
+            <p class="text-xl text-gray-700 mb-6">¿Estás listo para demostrar que eres un Súper Experto en la Misa?</p>
+            <button onclick="startGame()" class="bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-3 px-8 rounded-full text-2xl shadow-lg border-b-4 border-yellow-700 transition duration-150 transform hover:scale-105">
+                ¡Empezar a Jugar!
+            </button>
+        </div>
+
+        <!-- Pantalla de Resultado Final -->
+        <div id="result-screen" class="text-center p-8 hidden">
+            <h2 id="final-title" class="text-4xl font-extrabold text-green-600 mb-4"></h2>
+            <p id="final-score" class="text-2xl text-gray-700 mb-6"></p>
+            <p id="final-message" class="text-lg text-gray-600 mb-8"></p>
+            <button onclick="window.location.reload()" class="bg-blue-500 hover:bg-blue-400 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg border-b-4 border-blue-700 transition duration-150 transform hover:scale-105">
+                Volver a Jugar
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATA DEL CUESTIONARIO RECONSTRUIDA ---
+        const quizData = [
+            {
+                question: "¿Cuántas 'Partes' o 'Momentos' tiene la Súper Fiesta de la Misa que nos enseñó Jesús?",
+                hint: "Cada fiesta tiene una introducción, un centro importante y un final, ¡pero la Misa añade una parte más!",
+                options: [
+                    { text: "Dos partes.", isCorrect: false, rationale: "La Misa tiene cuatro partes principales: Ritos Iniciales, Liturgia de la Palabra, Liturgia Eucarística y Ritos de Conclusión." },
+                    { text: "Cuatro partes.", isCorrect: true, rationale: "¡Correcto! Son 4 momentos: Llegada, Hora del Cuento, Cena Mágica y Misión Cumplida." },
+                    { text: "Seis partes.", isCorrect: false, rationale: "Seis partes es excesivo; la Misa tiene cuatro momentos fundamentales." },
+                    { text: "Una sola parte.", isCorrect: false, rationale: "Aunque es una sola acción, se divide en 4 partes para entenderla mejor." }
+                ]
+            },
+            {
+                question: "¿Cómo llamamos al momento donde le pedimos perdón a Jesús al inicio de la Misa?",
+                hint: "Esta acción nos ayuda a preparar el corazón para escuchar a Dios y recibirlo.",
+                options: [
+                    { text: "El Abrazo del Cuento.", isCorrect: false, rationale: "El 'Abrazo del Cuento' no existe; el momento de escuchar es la Liturgia de la Palabra." },
+                    { text: "El Abrazo del Perdón (Acto Penitencial).", isCorrect: true, rationale: "¡Exacto! El Acto Penitencial es el momento para pedir perdón al empezar la fiesta." },
+                    { text: "La Misión Cumplida.", isCorrect: false, rationale: "La 'Misión Cumplida' es la despedida, al final de la Misa." },
+                    { text: "El Deseo del Día.", isCorrect: false, rationale: "El 'Deseo del Día' es la Colecta, la oración que el sacerdote lee." }
+                ]
+            },
+            {
+                question: "¿Cuál es el 'Sillón de la Historia' (Ambón) y quién puede subir a leer desde allí?",
+                hint: "No cualquiera puede contar la 'Historia de Dios' durante la Misa.",
+                options: [
+                    { text: "El Sillón del sacerdote; solo él puede leer.", isCorrect: false, rationale: "El sacerdote tiene su propia silla (la Sede); el Ambón es el lugar de la Palabra." },
+                    { text: "El lugar de la música; solo los cantantes.", isCorrect: false, rationale: "El lugar de la música es el coro; el Ambón es para la Palabra de Dios." },
+                    { text: "El lugar de la Palabra; solo el sacerdote, el diácono o el lector.", isCorrect: true, rationale: "¡Correcto! El Ambón es exclusivo para la proclamación de las lecturas, a cargo de los ministros autorizados." },
+                    { text: "El lugar de las ofrendas; cualquiera puede leer desde allí.", isCorrect: false, rationale: "El lugar de las ofrendas es cerca del altar; el Ambón tiene una función única." }
+                ]
+            },
+            {
+                question: "¿Qué parte de la Misa llamamos 'La Cena Mágica' y es su momento más importante?",
+                hint: "Es el momento en que Jesús se hace presente de forma real en el altar.",
+                options: [
+                    { text: "La Liturgia de la Palabra.", isCorrect: false, rationale: "La Liturgia de la Palabra es la 'Hora del Cuento' o la escucha de Dios." },
+                    { text: "Los Ritos Iniciales.", isCorrect: false, rationale: "Los Ritos Iniciales son la preparación y el saludo, al comienzo de la Misa." },
+                    { text: "La Consagración.", isCorrect: true, rationale: "¡Así es! Es el momento central donde ocurre el cambio del pan y el vino y Jesús se hace presente." },
+                    { text: "La Bendición Final.", isCorrect: false, rationale: "La Bendición Final es el último acto antes de que seamos enviados a cumplir la Misión." }
+                ]
+            },
+            {
+                question: "¿Qué significa el gesto de la **Genuflexión**?",
+                hint: "Solo hacemos este gesto cuando vemos la 'Casa de Jesús Oculto' (el Sagrario).",
+                options: [
+                    { text: "Un saludo de respeto (como un 'hola').", isCorrect: false, rationale: "La inclinación de cabeza o cintura es el signo de respeto, no la genuflexión." },
+                    { text: "Un aplauso de alegría.", isCorrect: false, rationale: "Los aplausos son para expresar alegría, pero la genuflexión es un gesto de adoración solemne." },
+                    { text: "Un acto de ADORACIÓN a Jesús Rey.", isCorrect: true, rationale: "¡Correcto! Es un gesto exclusivo para mostrar adoración a Jesús presente en el Sagrario o la Cruz." },
+                    { text: "El momento de sentarse.", isCorrect: false, rationale: "Sentarse es para escuchar o meditar; la genuflexión requiere poner la rodilla en el suelo." }
+                ]
+            },
+            {
+                question: "¿Cuál es el 'Súper Traje' blanco que usan **TODOS** los ministros (sacerdote, diácono, lector) en Misa?",
+                hint: "Esta vestidura larga es el símbolo de la pureza que necesitamos para servir en la Misa.",
+                options: [
+                    { text: "La Casulla.", isCorrect: false, rationale: "La Casulla es el chaleco de color, usado solo por el sacerdote." },
+                    { text: "El Alba.", isCorrect: true, rationale: "¡Exacto! El Alba (o túnica blanca) es la vestidura común de pureza que usan todos los ministros." },
+                    { text: "La Dalmática.", isCorrect: false, rationale: "La Dalmática es el chaleco de color con mangas, usado solo por el diácono." },
+                    { text: "La Estola.", isCorrect: false, rationale: "La Estola es la 'bufanda' que se usa sobre el Alba, pero no es la túnica blanca completa." }
+                ]
+            },
+            {
+                question: "Según el 'Semáforo Litúrgico', ¿qué significa el color **VERDE**?",
+                hint: "Este color se usa la mayor parte del año cuando no estamos celebrando una fiesta muy especial o una preparación.",
+                options: [
+                    { text: "Tiempo de Fiesta Máxima (Navidad, Pascua).", isCorrect: false, rationale: "El 'Tiempo de Fiesta Máxima' se representa con el color Blanco." },
+                    { text: "Tiempo de Coraje y Fuego (Mártires).", isCorrect: false, rationale: "El 'Tiempo de Coraje y Fuego' se representa con el color Rojo." },
+                    { text: "Tiempo de Preparación (Cuaresma, Adviento).", isCorrect: false, rationale: "El 'Tiempo de Preparación' se representa con el color Morado." },
+                    { text: "Tiempo de Paseo (Tiempo Ordinario).", isCorrect: true, rationale: "¡Muy bien! El verde se usa en el Tiempo Ordinario, cuando 'caminamos' tranquilos con Jesús." }
+                ]
+            },
+            {
+                question: "En la Iglesia, el Altar es un Tesoro. ¿Cuál es su regla principal de ubicación?",
+                hint: "Piensa en cómo se prepara una mesa de fiesta: debe ser accesible para todos.",
+                options: [
+                    { text: "Debe estar pegado a la pared para ser más solemne.", isCorrect: false, rationale: "La regla indica que el Altar debe estar separado de la pared para que el sacerdote pueda caminar alrededor." },
+                    { text: "Debe ser el CENTRO de la iglesia y estar separado de la pared.", isCorrect: true, rationale: "¡Correcto! El Altar es el centro físico y espiritual, y debe estar separado para significar el banquete." },
+                    { text: "Debe ser pequeño y solo usarse para las ofrendas.", isCorrect: false, rationale: "El Altar debe ser grande para el Banquete y se usa para el Sacrificio y la Consagración." },
+                    { text: "Debe ser de madera y estar cubierto de tela roja.", isCorrect: false, rationale: "El material y la tela dependen, pero la separación y el ser el centro es lo fundamental." }
+                ]
+            },
+            {
+                question: "¿Qué nos indica la **luz roja** que está encendida junto al Sagrario?",
+                hint: "Esta luz te avisa que debes hacer la genuflexión, pues el Rey está allí.",
+                options: [
+                    { text: "Que la Misa ya va a terminar.", isCorrect: false, rationale: "La luz roja no tiene relación con el final de la Misa." },
+                    { text: "Que hay una fiesta grande ese día.", isCorrect: false, rationale: "La luz roja no indica el tipo de fiesta, sino la presencia de Jesús." },
+                    { text: "Que la iglesia está cerrada.", isCorrect: false, rationale: "¡Todo lo contrario! Indica que el Tesoro más importante está allí." },
+                    { text: "Que ¡Jesús está en casa! (Señal Secreta de su presencia).", isCorrect: true, rationale: "¡Muy bien! Esa luz es el signo obligatorio que indica que el Santísimo Sacramento está reservado en el Sagrario." }
+                ]
+            },
+            {
+                question: "¿Cuál es el objetivo final de tantas reglas en la Misa?",
+                hint: "Piensa en las dos palabras clave que hacen que una fiesta sea ordenada y significativa.",
+                options: [
+                    { text: "Hacer que el sacerdote y el diácono se vean bonitos.", isCorrect: false, rationale: "El objetivo principal es la dignidad del Misterio, no la apariencia." },
+                    { text: "Garantizar el máximo RESPETO a Jesús y fomentar la PARTICIPACIÓN de todos.", isCorrect: true, rationale: "¡Excelente! Todas las reglas buscan que el Misterio sea tratado con dignidad y que los fieles participen activamente." },
+                    { text: "Hacer la Misa lo más larga posible para que dure más.", isCorrect: false, rationale: "El objetivo es la dignidad y la participación, no la duración del rito." },
+                    { text: "Que solo los adultos puedan entender lo que pasa.", isCorrect: false, rationale: "Las reglas ayudan a que la celebración sea clara y entendible para todas las edades." }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        const quizArea = document.getElementById('quiz-area');
+        const startScreen = document.getElementById('start-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const finalTitle = document.getElementById('final-title');
+        const finalScore = document.getElementById('final-score');
+        const finalMessage = document.getElementById('final-message');
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizArea.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= quizData.length) {
+                showResults();
+                return;
+            }
+
+            const current = quizData[currentQuestionIndex];
+            isAnswered = false;
+
+            // Generar el HTML de la pregunta
+            quizArea.innerHTML = `
+                <div class="question-header text-center mb-6">
+                    <p class="text-xl text-pink-500 font-bold mb-2">Pregunta ${currentQuestionIndex + 1} de ${quizData.length}</p>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-800 mb-4">${current.question}</h2>
+                </div>
+                <div id="options-container" class="space-y-4 mb-6">
+                    ${current.options.map((option, index) => `
+                        <button 
+                            data-index="${index}"
+                            data-correct="${option.isCorrect}"
+                            class="option-btn bg-yellow-300 w-full text-left p-4 rounded-xl text-lg font-semibold text-gray-800 border-2 border-yellow-600"
+                            onclick="checkAnswer(this)"
+                        >
+                            ${option.text}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Sección de Feedback/Pista -->
+                <div id="feedback-section" class="mt-8 p-4 rounded-lg bg-indigo-100 border-2 border-indigo-400 hidden-feedback">
+                    <p class="font-bold text-indigo-700 text-xl mb-2">¡Pista de Súper Experto! (O Razón de la Respuesta)</p>
+                    <p id="rationale-text" class="text-gray-700"></p>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="next-btn" onclick="nextQuestion()" class="bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl shadow-lg border-b-4 border-green-700 opacity-50 cursor-not-allowed" disabled>
+                        Siguiente Pregunta
+                    </button>
+                </div>
+            `;
+        }
+
+        function checkAnswer(selectedButton) {
+            if (isAnswered) return; // Previene doble click
+            isAnswered = true;
+
+            const isCorrect = selectedButton.dataset.correct === 'true';
+            const optionIndex = parseInt(selectedButton.dataset.index);
+            const current = quizData[currentQuestionIndex];
+            const rationaleText = current.options[optionIndex].rationale;
+
+            const allButtons = document.querySelectorAll('.option-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const feedbackSection = document.getElementById('feedback-section');
+            const rationaleDisplay = document.getElementById('rationale-text');
+            
+            // Deshabilitar todos los botones
+            allButtons.forEach(btn => btn.disabled = true);
+
+            // Mostrar feedback visual
+            if (isCorrect) {
+                selectedButton.classList.add('correct');
+                score++;
+                rationaleDisplay.innerHTML = `<span class="text-green-800 font-bold">¡Increíble, has acertado!</span> ${rationaleText}`;
+            } else {
+                selectedButton.classList.add('wrong');
+                rationaleDisplay.innerHTML = `<span class="text-red-800 font-bold">¡Casi! La respuesta correcta era:</span> ${current.options.find(opt => opt.isCorrect).rationale}`;
+                
+                // Resaltar la respuesta correcta
+                const correctButton = Array.from(allButtons).find(btn => btn.dataset.correct === 'true');
+                if (correctButton) {
+                    correctButton.classList.add('correct');
+                }
+            }
+
+            // Mostrar el área de feedback y habilitar el botón Siguiente
+            feedbackSection.classList.remove('hidden-feedback');
+            feedbackSection.classList.add('visible-feedback');
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function showResults() {
+            quizArea.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+
+            const total = quizData.length;
+            const percentage = (score / total) * 100;
+            let title = '';
+            let message = '';
+
+            if (percentage === 100) {
+                title = '¡SÚPER EXPERTO EN MISA TOTAL! 👑';
+                message = '¡Conoces todos los secretos! Eres un verdadero campeón litúrgico.';
+                finalTitle.classList.remove('text-yellow-600', 'text-red-600');
+                finalTitle.classList.add('text-green-600');
+            } else if (percentage >= 70) {
+                title = '¡Casi Súper Experto! ⭐';
+                message = '¡Lo has hecho muy bien! Solo te faltan unos pequeños detalles para ser el mejor.';
+                finalTitle.classList.remove('text-green-600', 'text-red-600');
+                finalTitle.classList.add('text-yellow-600');
+            } else {
+                title = '¡Buen Esfuerzo! 💪';
+                message = '¡Vuelve a leer el guion y seguro que en el siguiente intento lo logras! Recuerda que lo importante es el esfuerzo.';
+                finalTitle.classList.remove('text-green-600', 'text-yellow-600');
+                finalTitle.classList.add('text-red-600');
+            }
+
+            finalTitle.textContent = title;
+            finalScore.textContent = `Tu Puntuación: ${score} de ${total} preguntas.`;
+            finalMessage.textContent = message;
+        }
+
+        // Inicializar la pantalla de inicio
+        document.addEventListener('DOMContentLoaded', () => {
+             quizArea.classList.add('hidden');
+             startScreen.classList.remove('hidden');
+        });
+
+    </script>
+</body>
+</html>
